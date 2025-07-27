@@ -1,0 +1,24 @@
+import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+class WebView extends StatelessWidget {
+  final String? initialUrl;
+  final JavascriptMode javascriptMode;
+  final Function(WebViewController)? onWebViewCreated;
+
+  const WebView({
+    super.key,
+    required this.initialUrl,
+    required this.javascriptMode,
+    this.onWebViewCreated,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return WebViewWidget(
+      controller: WebViewController()
+        ..loadRequest(Uri.parse(initialUrl!))
+        ..setJavaScriptMode(javascriptMode),
+    );
+  }
+}

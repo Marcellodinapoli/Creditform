@@ -1,0 +1,21 @@
+import 'package:flutter/material.dart';
+
+class WebView extends StatelessWidget {
+  final String? initialUrl;
+  final dynamic javascriptMode;
+  final dynamic onWebViewCreated;
+
+  const WebView({
+    super.key,
+    this.initialUrl,
+    this.javascriptMode,
+    this.onWebViewCreated,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text("WebView non supportato su questa piattaforma."),
+    );
+  }
+}
