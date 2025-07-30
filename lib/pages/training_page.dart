@@ -35,7 +35,6 @@ class _TrainingPageState extends State<TrainingPage>
   bool canAccess = true;
   int videoViews = 0;
   List<String> quizAttempts = [];
-  int downloadedFilesCount = 0; // <-- aggiunto conteggio file scaricati
   late TabController _tabController;
   Timer? quizTimer;
   int remainingSeconds = 200;
@@ -108,8 +107,6 @@ class _TrainingPageState extends State<TrainingPage>
               false;
       videoViews = prefs.getInt('videoViews_$courseTitle') ?? 0;
       quizAttempts = prefs.getStringList('quizAttempts_$courseTitle') ?? [];
-      downloadedFilesCount =
-          prefs.getInt('downloadedFilesCount_$courseTitle') ?? 0; // <-- carico conteggio file
     });
   }
 
@@ -146,11 +143,47 @@ class _TrainingPageState extends State<TrainingPage>
     setState(() {
       isCompleted = true;
     });
+
+    _showTemporaryPopup(
+        score == quizQuestions.length
+            ? 'Complimenti! Quiz completato con successo!'
+            : 'Quiz completato. Ora puoi passare al corso successivo.');
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content:
           Text('Stato aggiornato con voto: $score/${quizQuestions.length}')),
     );
+  }
+
+  void _showTemporaryPopup(String message) {
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 100,
+        left: MediaQuery.of(context).size.width / 4,
+        width: MediaQuery.of(context).size.width / 2,
+        child: Material(
+          color: Colors.grey[300],
+          elevation: 10,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay?.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
   }
 
   void _startQuizTimer() {
@@ -204,12 +237,12 @@ class _TrainingPageState extends State<TrainingPage>
     _trackVideoView();
     return Center(
       child: Container(
-        width: 1280, // larghezza fissa container
-        height: 720, // altezza fissa container
+        width: 1280,
+        height: 720,
         decoration: BoxDecoration(
-          color: Colors.black, // sfondo nero per la cornice
-          borderRadius: BorderRadius.circular(8), // angoli arrotondati
-          boxShadow: [
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const [
             BoxShadow(
               color: Colors.black45,
               blurRadius: 10,
@@ -240,9 +273,9 @@ class _TrainingPageState extends State<TrainingPage>
           final iframe = html.IFrameElement()
             ..src = videoUrl!
             ..style.border = 'none'
-            ..style.width = '1280px' // larghezza fissa 1280 px
-            ..style.height = '720px' // altezza fissa 720 px
-            ..style.backgroundColor = 'white' // sfondo bianco
+            ..style.width = '1280px'
+            ..style.height = '720px'
+            ..style.backgroundColor = 'white'
             ..allowFullscreen = true;
           iframe.setAttribute('allowfullscreen', '');
           return iframe;
@@ -252,8 +285,8 @@ class _TrainingPageState extends State<TrainingPage>
         child: Container(
           padding: EdgeInsets.zero,
           color: Colors.white,
-          width: 1280, // larghezza fissa container
-          height: 720, // altezza fissa container
+          width: 1280,
+          height: 720,
           child: HtmlElementView(viewType: viewID),
         ),
       );
@@ -344,49 +377,116 @@ class _TrainingPageState extends State<TrainingPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tempo rimasto: $remainingSeconds secondi'),
-            Text('${currentQuestionIndex + 1} / ${quizQuestions.length}'),
+            Center(
+              child: Text(
+                'Tempo rimasto: $remainingSeconds secondi',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             const SizedBox(height: 10),
+            Center(
+              child: Text(
+                '${currentQuestionIndex + 1} / ${quizQuestions.length}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               question.question,
-              style: const TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             ...question.answers.asMap().entries.map(
-                  (entry) => Padding(
-                padding:
-                const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                child: ElevatedButton(
-                  onPressed: () => _answerQuestion(entry.key),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[300],
+                  (entry) {
+                final index = entry.key;
+                final answerText = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                  child: ElevatedButton(
+                    onPressed: () => _answerQuestion(index),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[300],
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('${index + 1}. $answerText'),
+                    ),
                   ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('${entry.key + 1}. ${entry.value}'),
-                  ),
-                ),
-              ),
+                );
+              },
             ),
-            // Nuova sezione per il dettaglio dei file scaricati
             const SizedBox(height: 20),
-            const Text(
-              'Dettaglio file scaricati',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Text(downloadedFilesCount > 0
-                ? 'Hai scaricato $downloadedFilesCount file.'
-                : 'Nessun file scaricato.'),
+            // Bottone dettagli rimosso qui come richiesto
           ],
         ),
       ),
     );
   }
 
+  void _showQuizDetailsPopup() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Dettagli Quiz'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: quizQuestions.asMap().entries.map((entry) {
+                final index = entry.key;
+                final question = entry.value;
+                final userAnswerCorrect =
+                    (index < currentQuestionIndex) && true; // Da implementare meglio se vuoi
+
+                final correctIndex = question.correctIndex;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: RichText(
+                    text: TextSpan(
+                      text: '${index + 1}. ${question.question}\n',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                      children: [
+                        TextSpan(
+                          text:
+                          'Risposta corretta: ${question.answers[correctIndex]}\n',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.normal, color: Colors.green),
+                        ),
+                        TextSpan(
+                          text:
+                          'Tua risposta: ${index < currentQuestionIndex ? question.answers[correctIndex] : "Non risposto"}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.normal,
+                            color: userAnswerCorrect ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Chiudi'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final previousCourse =
-    widget.currentIndex > 0 ? widget.courseList[widget.currentIndex - 1] : null;
+    final previousCourse = widget.currentIndex > 0
+        ? widget.courseList[widget.currentIndex - 1]
+        : null;
     final nextCourse = widget.currentIndex < widget.courseList.length - 1
         ? widget.courseList[widget.currentIndex + 1]
         : null;
@@ -394,7 +494,7 @@ class _TrainingPageState extends State<TrainingPage>
     return PageWrapper(
       title: 'Training',
       showBackButton: true,
-      backButtonText: '', // <- Togli testo "Ritorna", solo freccia bianca
+      backButtonText: '',
       child: currentUser == null
           ? const Center(
         child: Text(
@@ -435,7 +535,8 @@ class _TrainingPageState extends State<TrainingPage>
                     const Text("SUCCESSIVO",
                         style: TextStyle(color: Colors.purple)),
                     Text(nextCourse,
-                        style: const TextStyle(color: Colors.purple)),
+                        style:
+                        const TextStyle(color: Colors.purple)),
                   ],
                 )
                     : const SizedBox(),

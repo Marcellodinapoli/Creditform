@@ -68,14 +68,16 @@ class _RoleplayPageState extends State<RoleplayPage> with SingleTickerProviderSt
   }
 
   void openPopupWindow(String url) {
-    final width = 900;
+    final width = 700; // più stretto
     final height = 600;
-    final left = (html.window.screen?.available.width ?? 1920) - width - 50;
+    final screenWidth = html.window.screen?.available.width ?? 1920;
+    final left = screenWidth - width - 20; // spostato quasi al bordo destro (20px margine)
     final top = 100;
     final windowFeatures =
-        'width=$width,height=$height,left=$left,top=$top,resizable=yes,scrollbars=yes';
+        'width=$width,height=$height,left=$left,top=$top,resizable=yes,scrollbars=yes,noopener=yes,noreferrer=yes';
 
     html.window.open(url, 'simulazione_popup', windowFeatures);
+    // Rimosso popup?.focus(); perché non esiste in dart:html
   }
 
   @override
@@ -169,7 +171,6 @@ class _RoleplayPageState extends State<RoleplayPage> with SingleTickerProviderSt
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Descrizione pratica
           Expanded(
             flex: 2,
             child: Column(
@@ -190,7 +191,6 @@ class _RoleplayPageState extends State<RoleplayPage> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(width: 24),
-          // Elenco simulazioni con bottoni Apri
           Expanded(
             flex: 1,
             child: ListView.builder(

@@ -11,10 +11,41 @@ class CourseDetailsPage extends StatefulWidget {
   State<CourseDetailsPage> createState() => _CourseDetailsPageState();
 }
 
+// Classe per rappresentare i dettagli delle risposte di un quiz
+class QuizAnswerDetail {
+  final String question;
+  final List<String> answers;
+  final int correctIndex;
+  final int? userAnswerIndex;
+
+  QuizAnswerDetail({
+    required this.question,
+    required this.answers,
+    required this.correctIndex,
+    this.userAnswerIndex,
+  });
+}
+
 class _CourseDetailsPageState extends State<CourseDetailsPage> {
   late Future<Map<String, dynamic>> _progressFuture;
   late Future<List<QuizAttempt>> _quizAttemptsFuture;
   late Future<int> _downloadedFilesCountFuture;
+
+  // Esempio dati quiz svolto: sostituisci con dati reali caricati da DB
+  final List<QuizAnswerDetail> quizDetails = [
+    QuizAnswerDetail(
+      question: 'Qual è la capitale d\'Italia?',
+      answers: ['Roma', 'Napoli', 'Milano'],
+      correctIndex: 0,
+      userAnswerIndex: 1,
+    ),
+    QuizAnswerDetail(
+      question: '2 + 2 fa?',
+      answers: ['3', '4', '5'],
+      correctIndex: 1,
+      userAnswerIndex: 1,
+    ),
+  ];
 
   @override
   void initState() {
@@ -61,6 +92,61 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     return prefs.getInt('downloadedFilesCount_$courseTitle') ?? 0;
   }
 
+  void _showQuizDetailsPopup() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dettagli Quiz'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: quizDetails.map((detail) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      detail.question,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...detail.answers.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final answer = entry.value;
+                      Color color = Colors.black;
+                      if (idx == detail.correctIndex) {
+                        color = Colors.green;
+                      }
+                      if (detail.userAnswerIndex != null &&
+                          idx == detail.userAnswerIndex &&
+                          idx != detail.correctIndex) {
+                        color = Colors.red;
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text(
+                          '${idx + 1}. $answer',
+                          style: TextStyle(color: color),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Chiudi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle titleStyle = Theme.of(context).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.bold);
@@ -88,7 +174,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               Text('Ultima visualizzazione: ${progress['videoLastView']}'),
 
               const SizedBox(height: 16),
-              const Divider(height: 1, thickness: 1), // Linea divisoria prima di File scaricati
+              const Divider(height: 1, thickness: 1),
               const SizedBox(height: 16),
 
               Text('File scaricati', style: titleStyle),
@@ -119,6 +205,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
               Text('Tempo medio: ${progress['quizAvgTime']}'),
               Text('Risposte corrette: ${progress['quizCorrectAnswers']}'),
               Text('Risposte sbagliate: ${progress['quizWrongAnswers']}'),
+
               const Divider(height: 32),
 
               Text('Dettaglio tentativi quiz', style: Theme.of(context).textTheme.titleLarge),
@@ -152,14 +239,12 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
                       return DataRow(cells: [
                         DataCell(Text(widget.courseTitle)),
                         DataCell(Text(attempt.timestamp)),
-                        DataCell(Text('---')),
+                        const DataCell(Text('---')),
                         DataCell(Text(attempt.score)),
                         DataCell(
                           ElevatedButton(
                             child: const Text('Dettagli'),
-                            onPressed: () {
-                              // Azione da definire
-                            },
+                            onPressed: _showQuizDetailsPopup,
                           ),
                         ),
                       ]);

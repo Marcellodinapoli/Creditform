@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Per logout
 import 'dashboard_page.dart';
 import 'courses_page.dart';
-import 'roleplay_page.dart'; // Assicurati che il nome della classe sia corretto (RoleplayPage o RolePlayPage)
+import 'roleplay_page.dart';
 import 'training_page.dart';
+import 'dart:html' as html; // Per onBeforeUnload (Flutter Web)
 
 class MainScaffoldWithRole extends StatefulWidget {
   final String role;
@@ -32,6 +34,17 @@ class _MainScaffoldWithRoleState extends State<MainScaffoldWithRole> {
     super.initState();
     role = widget.role;
     currentPage = widget.currentPage;
+
+    // PUNTO 2: logout automatico alla chiusura pagina
+    html.window.onBeforeUnload.listen((event) {
+      FirebaseAuth.instance.signOut();
+    });
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
@@ -40,18 +53,25 @@ class _MainScaffoldWithRoleState extends State<MainScaffoldWithRole> {
       appBar: AppBar(
         title: const Text(
           'CreditForm',
-          style: TextStyle(color: Colors.white), // testo forzato bianco
+          style: TextStyle(color: Colors.white),
         ),
         backgroundColor: appBarBlue,
+        // PUNTO 1: bottone logout a destra
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await _logout();
+            },
+          ),
+        ],
       ),
       body: Row(
         children: [
-          // Contenuto principale (espande a sinistra)
           Expanded(
             child: widget.child,
           ),
-
-          // Menu a destra fisso
           Container(
             width: 200,
             color: Colors.grey[100],
@@ -65,14 +85,13 @@ class _MainScaffoldWithRoleState extends State<MainScaffoldWithRole> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black, // Titolo menù nero e grassetto
+                      color: Colors.black,
                     ),
                   ),
                 ),
                 _buildMenuItem('dashboard', 'Dashboard', Icons.dashboard),
                 _buildMenuItem('corsi', 'Corsi', Icons.menu_book),
                 _buildMenuItem('roleplay', 'Roleplay', Icons.record_voice_over),
-                // Se vuoi togliere training dal menu, non aggiungerlo qui
               ],
             ),
           ),

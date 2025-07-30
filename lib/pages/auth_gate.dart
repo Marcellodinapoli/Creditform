@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'splash_page.dart';
 import 'auth_page.dart';
 import 'training_page.dart';
 
 class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
+  const AuthGate({Key? key}) : super(key: key);
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -19,7 +18,7 @@ class _AuthGateState extends State<AuthGate> {
   void initState() {
     super.initState();
 
-    // Mostra lo splash per 2 secondi
+    // Mostra splash per 2 secondi
     Future.delayed(const Duration(seconds: 2), () {
       setState(() {
         _showSplash = false;
@@ -30,7 +29,9 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
-      return const SplashPage();
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     return StreamBuilder<User?>(
@@ -46,7 +47,7 @@ class _AuthGateState extends State<AuthGate> {
             currentIndex: 0,
           );
         } else {
-          return AuthPage(); // <-- tolto const qui
+          return const AuthPage();
         }
       },
     );
